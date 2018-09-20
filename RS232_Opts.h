@@ -32,16 +32,13 @@ NOTES:
 #ifndef UART_OPTS_H
 #define UART_OPTS_H
 
-#include "StdUART.def"         // Standardized USART register definitions.
+#if defined(__AVR_ATmega162__)
+  #define UseUART1
+#else
+  #define UseUART0
+#endif
 
-#define UseUART0               // RS485 to/from the PC
-//#define Uart0TxLedPort PORTE   // Used for Tx/RX control
-//#define Uart0TxLedBit  PE4
-//#define Uart0RxLedPort PORTE   // Just for Rx LED
-//#define Uart0RxLedBit  PE5
-
-#define UART0_RX_FLOWCTRL UFC_NONE
-#define UART0_TX_FLOWCTRL UFC_NONE
+#include "StdUART.def"         // Standardized USART definitions.
 
 /*------------------------- Universal Options --------------------------*/
 
@@ -61,7 +58,7 @@ NOTES:
 // Size of the circular transmit buffers. Must be power of 2
 
 #ifndef UART_TX_BUFFER_SIZE
-  #define UART_TX_BUFFER_SIZE 64
+  #define UART_TX_BUFFER_SIZE 128
 #endif
 
 // Receive buffer flow control levels (Xon/Xoff or hardware)
@@ -83,47 +80,118 @@ NOTES:
 
 #define APP_UART_GETC_WAIT {}
 
+/*--------------------------- UART0 Options ---------------------------*/
+
+#define UseUART0                         // Unrem to use RS232.h library to control hardware UART0
+
+#if defined(UseUART0) && (UARTS > 0)
+
+#define UART0_RX_FLOWCTRL UFC_NONE
+//#define UART0_RX_FLOWCTRL UFC_XONXOFF // To specifically use Xon/Xoff flow control on UART0
+//#define UART0_RX_FLOWCTRL UFC_RTSCTS  // To specifically use RTS/CTS flow control on UART0
+
+#define UART0_TX_FLOWCTRL UFC_NONE
+//#define UART0_TX_FLOWCTRL UFC_XONXOFF // To specifically use Xon/Xoff flow control on UART0
+//#define UART0_TX_FLOWCTRL UFC_XONXOFF // To specifically use Xon/Xoff flow control on UART0
+
+// Define the i/o port and two of its pins to drive the (normally red) 
+// "transmitting" indicator LED and the (normally green) "receiving" LED
+// Rem out the first define to remove the LED indicator code for UART0.
+
+  #ifndef Uart0TxLedPort
+    #define Uart0TxLedPort  PORTD       // Rem this out to remove Rx/Tx LED code on Uart0
+    #define Uart0RxLedPort  PORTD       // Rem this out to remove Rx/Tx LED code on Uart0
+    #define Uart0RxLedBit   PORTD2      // Default RxD LED (next pin from TxD on MexgaX8)
+    #define Uart0TxLedBit   PORTD3      // Default TxD LED (RxD->TxLed = PD0..PD3 on MegaX8)
+  #endif
+
+// Define the i/o port and two of its pins for RTS and CTS flow control 
+ 
+  #if((UART0_RX_FLOWCTRL == UFC_RTSCTS) || (UART0_TX_FLOWCTRL == UFC_RTSCTS))
+    #define UART0ModemPort   PORTB
+
+    #if(UART0_RX_FLOWCTRL == UFC_RTSCTS)
+      #define UART0bitRTS PB1
+    #endif
+    #if(UART0_TX_FLOWCTRL == UFC_RTSCTS)
+      #define UART0bitCTS PB2
+    #endif
+  #endif
+#endif
+
 /*--------------------------- UART1 Options ---------------------------*/
 
-#define UseUART1                      // Unrem to use RS232.h library to control hardware UART1
+//#define UseUART1                      // Unrem to use RS232.h library to control hardware UART1
+
+#if defined(UseUART1) && (UARTS > 1)
 
 #define UART1_RX_FLOWCTRL UFC_NONE
+//#define UART1_RX_FLOWCTRL UFC_XONXOFF // To specifically use Xon/Xoff flow control on UART1
+//#define UART1_RX_FLOWCTRL UFC_RTSCTS  // To specifically use RTS/CTS flow control on UART1
+
 #define UART1_TX_FLOWCTRL UFC_NONE
+//#define UART1_TX_FLOWCTRL UFC_XONXOFF // To specifically use Xon/Xoff flow control on UART1
+//#define UART1_TX_FLOWCTRL UFC_XONXOFF // To specifically use Xon/Xoff flow control on UART1
 
 // Define the i/o port and two of its pins to drive the (normally red) 
 // "transmitting" indicator LED and the (normally green) "receiving" LED
 // Rem out the first define to remove the LED indicator code for UART1.
 
-  #define Uart1TxLedPort  PORTD       // Rem this out to remove Rx/Tx LED code on Uart1
-  #define Uart1TxLedBit   PD4      // TxD LED and Transmit/Receive control line
-  #define Uart1RxLedPort  PORTD       // Rem this out to remove Rx/Tx LED code on Uart1
-  #define Uart1RxLedBit   PD6      // Default RxD LED (next pin from TxD on MexgaX8)
+  #ifndef Uart1LedPort
+    #define Uart1TxLedPort  PORTC       // Rem this out to remove Rx/Tx LED code on Uart1
+    #define Uart1RxLedPort  PORTC
+    #define Uart1RxLedBit   PC2
+    #define Uart1TxLedBit   PC3
+  #endif
+#endif
 
-// Define the i/o port and two of its pins for RS485 direction control  (same pin as Tx LED)
- 
-	#define UART1_TX_RX_PORT  Uart1TxLedPort
-	#define UART1_TX_RX_PIN   Uart1TxLedBit
-	
-	#define UseUART2
-	
+/*--------------------------- UART2 Options ---------------------------*/
+
+//#define UseUart2                      // Unrem to use RS232.h library to control hardware UART2
+
+#if defined(UseUART2) && (UARTS > 2)
+  
 #define UART2_RX_FLOWCTRL UFC_NONE
+//#define UART2_RX_FLOWCTRL UFC_XONXOFF // To specifically use Xon/Xoff flow control on UART2
+//#define UART2_RX_FLOWCTRL UFC_RTSCTS  // To specifically use RTS/CTS flow control on UART2
+
 #define UART2_TX_FLOWCTRL UFC_NONE
+//#define UART2_TX_FLOWCTRL UFC_XONXOFF // To specifically use Xon/Xoff flow control on UART2
+//#define UART2_TX_FLOWCTRL UFC_XONXOFF // To specifically use RTS/CTS flow control on UART2
 
-/*  #define Uart2TxLedPort  PORTD       // Rem this out to remove Rx/Tx LED code on Uart2
-  #define Uart2TxLedBit   PD3      // TxD LED and Transmit/Receive control line
-  #define Uart2RxLedPort  PORTD       // Rem this out to remove Rx/Tx LED code on Uart2
-  #define Uart2RxLedBit   PD2      // Default RxD LED (next pin from TxD on MexgaX8)*/
 
-  #define Uart2TxLedPort  PORTE       // Rem this out to remove Rx/Tx LED code on Uart2
-  #define Uart2TxLedBit   PE4      // TxD LED and Transmit/Receive control line
-  #define Uart2RxLedPort  PORTE       // Rem this out to remove Rx/Tx LED code on Uart2
-  #define Uart2RxLedBit   PE5      // Default RxD LED (next pin from TxD on MexgaX8)
+  #ifndef Uart2LedPort
+    #define Uart2TxLedPort  PORTA       // Rem this out to remove Rx/Tx LED code on Uart2
+    #define Uart2RxLedPort  PORTA
+    #define Uart2RxLedBit   PA2
+    #define Uart2TxLedBit   PA3
+  #endif
+#endif
 
-	#define UART2_TX_RX_PORT  Uart2TxLedPort
-	#define UART2_TX_RX_PIN   Uart2TxLedBit
+/*--------------------------- UART3 Options ---------------------------*/
 
-	#define DEBUG_PORT PORTG
-	#define DEBUG_PIN PG5
+//#define UseUART3                      // Unrem to use the RS232.h library to control hardware UART3
+
+#if defined(UseUART3) && (UARTS > 3)
+
+#define UART3_RX_FLOWCTRL UFC_NONE
+//#define UART3_RX_FLOWCTRL UFC_XONXOFF // To specifically use Xon/Xoff flow control on UART3
+//#define UART3_RX_FLOWCTRL UFC_RTSCTS  // To specifically use RTS/CTS flow control on UART3
+
+#define UART3_TX_FLOWCTRL UFC_NONE
+//#define UART3_TX_FLOWCTRL UFC_XONXOFF // To specifically use Xon/Xoff flow control on UART3
+//#define UART3_TX_FLOWCTRL UFC_XONXOFF // To specifically use RTS/CTS flow control on UART3
+
+
+  #ifndef Uart3LedPort
+    #define Uart3TxLedPort  PORTA       // Rem this out to remove Rx/Tx LED code on Uart3
+    #define Uart3RxLedPort  PORTA
+    #define Uart3RxLedBit   PA1
+    #define Uart3TxLedBit   PA0
+  #endif
+#endif
 
 #endif
 
+/*----------------------------------------------------------------------*/
+/*----------------------------------------------------------------------*/
