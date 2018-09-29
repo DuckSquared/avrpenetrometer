@@ -895,6 +895,7 @@ void RobotReadChar(void)
 		} while (lastCharacter < 256 && !fromRobotReady);
 		if (robotWatchdogState)
 		{
+			robotWatchdog = ROBOT_TIMEOUT;
 			robotWatchdogState = 0;
 			if (logging)
 				robot_puts("# Robot timeout\n");
@@ -1074,12 +1075,14 @@ void DoProbe(byte newProbeDir)
 	}
 	else if (startedMoving && !IsMoving())
 	{
-		startedMoving = 0;
-		isProbing = 0;
-		probeState = probeDir;
-		while (readSample); // wait for last sample to finish being read and sent before confirming end of probing
-		RobotSend(avrDoProbe, probeDir);
-		currentTask = ' ';
+		if (!readSample) // wait for last sample to finish being read and sent before confirming end of probing
+		{
+			startedMoving = 0;
+			isProbing = 0;
+			probeState = probeDir;
+			RobotSend(avrDoProbe, probeDir);
+			currentTask = ' ';			
+		}
 	}
 }
 

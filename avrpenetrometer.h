@@ -41,7 +41,7 @@
 #define STEPS_MAX 100
 #define STEPS_MIN 1
 #define TOLER_MAX 255
-#define TOLER_MIN 1
+#define TOLER_MIN 0
 #define FORCE_MAX 10000
 #define FORCE_MIN -10000
 #define ROBOT_TIMEOUT 3000
