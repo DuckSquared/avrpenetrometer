@@ -498,6 +498,8 @@ void CncReadChar(void)
 					fromCnc[fromCncIndex] = 0;
 					fromCncReady = 1;
 					fromCncIndex = 0;
+					if (fromCnc[0] == '#')
+						fromCncReady = 0;
 				}
 			}
 		} while (lastCharacter < 256 && !fromCncReady);
@@ -668,6 +670,7 @@ void CncSimLimitSw(long newSimLimitSw)
 void CncGetTargetPos(void)
 {
 	CncTransmit(cncGetTargetPosCmd);
+	expectedRsp = cmdGetTargetPos;
 }
 
 void CncGetHomeState(void)
@@ -1030,8 +1033,11 @@ void Done(void)
 void Save(void)
 {
 	if (currentStep == 0)
+	{
 		CncSaveParams();
-	else
+		currentStep++;
+	}
+	else if (fromCncReady)
 	{
 		RobotSend(avrSave, 1);
 		currentTask = ' ';
@@ -1049,29 +1055,40 @@ void DoProbe(byte newProbeDir)
 {
 	if (!isProbing)
 	{
-		isHoming = 0;
-		startedMoving = 0;
-		isProbing = 1;
-		probeState = 1;
-		DCellGetForce();
-		ConvertForceToInt();
-		lastForce = currentForce;
-		CncGetTargetPos();
-		sampleCount = ConvertStepstoDMM(&fromCnc[2]) - groundLevel;
-		if (newProbeDir != 0)
-			newProbeDir = 1;
-		probeDir = newProbeDir;
-		if (probeDir)
+		if (currentStep == 0 || fromCncReady)
 		{
-			sampleCount -= stepsPerX;
-			CncSend(cmdGoTo, ConvertDMMtoSteps(groundLevel + maxDepth));
+			switch (currentStep)
+			{
+			case 0:
+				DCellGetForce();
+				ConvertForceToInt();
+				lastForce = currentForce;
+				CncGetTargetPos();
+				break;
+			case 1:
+				fromCncReady = 0;
+				sampleCount = ConvertStepstoDMM(&fromCnc[2]) - groundLevel;
+				isHoming = 0;
+				startedMoving = 0;
+				isProbing = 1;
+				probeState = 1;
+				if (newProbeDir != 0)
+					newProbeDir = 1;
+				probeDir = newProbeDir;
+				if (probeDir)
+				{
+					sampleCount -= stepsPerX;
+					CncSend(cmdGoTo, ConvertDMMtoSteps(groundLevel + maxDepth));
+				}
+				else
+				{
+					sampleCount += stepsPerX;
+					CncSend(cmdGoTo, ConvertDMMtoSteps(0));
+				}
+				break;
+			}
+			currentStep++;
 		}
-		else
-		{
-			sampleCount += stepsPerX;
-			CncSend(cmdGoTo, ConvertDMMtoSteps(0));
-		}
-		currentStep = 1;
 	}
 	else if (startedMoving && !IsMoving())
 	{
